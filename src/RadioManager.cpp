@@ -29,17 +29,8 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 
-void printMacAddress(uint8_t mac[], size_t length) {
-  for (size_t i = 0; i < length; i++) {
-    if (i > 0) {
-      Serial.print(":");
-    }
-    if (mac[i] < 0x10) {
-      Serial.print("0");  // Add leading zero for single-digit bytes
-    }
-    Serial.print(mac[i], HEX);
-  }
-  Serial.println();
+void printMacAddress(const uint8_t mac[]) {
+  Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X\r\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
 void RadioManager::init() {
@@ -49,13 +40,13 @@ void RadioManager::init() {
   esp_wifi_get_mac(WIFI_IF_STA, mac);
 
   Serial.print("Default ESP Board MAC Address: ");
-  printMacAddress(mac, 6);
+  printMacAddress(mac);
 
   esp_wifi_set_mac(WIFI_IF_STA, newMacAddress);
   esp_wifi_get_mac(WIFI_IF_STA, mac);
 
   Serial.print("New ESP Board MAC Address:     ");
-  printMacAddress(mac, 6);
+  printMacAddress(mac);
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -82,12 +73,12 @@ void RadioManager::init() {
 bool ledOn = false;
 
 void RadioManager::update() {
-  if (sinceSend > 200 && ledOn) {
+  if (sinceSend > 100 && ledOn) {
     ledOn = false;
     setLEDColor(0, 0, 0);
   }
 
-  if (sinceSend < 500) return;
+  if (sinceSend < 250) return;
   sinceSend = 0;
 
   sendData.time = timeManager.getTime();
@@ -96,11 +87,11 @@ void RadioManager::update() {
 
   if (result == ESP_OK) {
     Serial.println("Sent with success");
-    setLEDColor(0, 200, 0);
+    setLEDColor(0, 100, 0);
     ledOn = true;
   } else {
     Serial.println("Error sending the data");
-    setLEDColor(200, 0, 0);
+    setLEDColor(100, 0, 0);
     ledOn = true;
   }
 }

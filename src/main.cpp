@@ -2,6 +2,7 @@
 
 #include "LEDManager.h"
 #include "RadioManager.h"
+#include "SerialManager.h"
 #include "TimeManager.h"
 
 void setup() {
@@ -14,11 +15,13 @@ void setup() {
   // }
   // delay(500);
 
+  serialManager.init();
   timeManager.init();
   radioManager.init();
 }
 
 void loop() {
+  serialManager.update();
   timeManager.update();
   radioManager.update();
 }

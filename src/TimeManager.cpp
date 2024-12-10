@@ -1,59 +1,40 @@
 #include "TimeManager.h"
 
-#include <ESP32Time.h>
+#include <RTClib.h>
+#include <SPI.h>
 
-ESP32Time rtc;
+RTC_DS3231 rtc;
 
 void TimeManager::init() {
-  wakeup_reason();
+  Wire.begin(1, 2);
 
-  Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));  // (String) returns time with specified format
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    Serial.flush();
+    while (1) delay(10);
+  }
+
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power, let's set the time!");
+    // When time needs to be set on a new device, or after a power loss, the
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
 }
 
 void TimeManager::update() {
   if (sincePrint < 1000) return;
   sincePrint = 0;
-  Serial.println(getTimeString());
-}
-
-String TimeManager::getTimeString() {
-  return rtc.getTime("%Y_%m_%d_%H_%M_%S");
+  DateTime now = rtc.now();
+  Serial.printf("%.4i-%.2i-%.2i %.2i:%.2i:%.2i\r\n", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
 }
 
 unsigned long TimeManager::getTime() {
-  return rtc.getEpoch();
+  return rtc.now().unixtime();
 }
 
 void TimeManager::setTime(unsigned long t) {
-  rtc.setTime(t);
-}
-
-void TimeManager::wakeup_reason() {
-  esp_sleep_wakeup_cause_t wakeup_reason;
-
-  wakeup_reason = esp_sleep_get_wakeup_cause();
-  switch (wakeup_reason) {
-    case ESP_SLEEP_WAKEUP_EXT0:
-      Serial.println("Wakeup caused by external signal using RTC_IO");
-      break;
-    case ESP_SLEEP_WAKEUP_EXT1:
-      Serial.println("Wakeup caused by external signal using RTC_CNTL");
-      break;
-    case ESP_SLEEP_WAKEUP_TIMER:
-      Serial.println("Wakeup caused by timer");
-      break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD:
-      Serial.println("Wakeup caused by touchpad");
-      break;
-    case ESP_SLEEP_WAKEUP_ULP:
-      Serial.println("Wakeup caused by ULP program");
-      break;
-    default:
-      Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
-      rtc.setTime(30, 24, 15, 17, 1, 2021);  // TODO; set to last saved date on from SD
-
-      break;
-  }
+  rtc.adjust(DateTime(t));
 }
 
 TimeManager timeManager;
