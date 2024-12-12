@@ -6,12 +6,13 @@
 RTC_DS3231 rtc;
 
 void TimeManager::init() {
-  Wire.begin(1, 2);
+  Wire.begin(16, 17);
 
   if (!rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-    Serial.flush();
-    while (1) delay(10);
+    while (1) {
+      delay(500);
+      Serial.println("Couldn't find RTC");
+    }
   }
 
   if (rtc.lostPower()) {
